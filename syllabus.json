@@ -1,0 +1,239 @@
+{
+  "SAP": {
+    "SAP Security & GRC": {
+      "module_1": {
+        "title": "Module 1: S/4 HANA Introduction",
+        "lessons": [
+          { "title": "Versions of S/4 HANA", "type": "lesson" },
+          { "title": "Difference between S/4 HANA and HANA DB", "type": "lesson" },
+          { "title": "Architecture of S/4 HANA", "type": "lesson" }
+        ]
+      },
+      "module_2": {
+        "title": "Module 2: Introduction to Security",
+        "lessons": [
+          { "title": "Importance of Security", "type": "lesson" },
+          { "title": "Overview of Network, Database, OS & Application Level Security", "type": "lesson" },
+          { "title": "Security standards & framework", "type": "lesson" }
+        ]
+      },
+      "module_3": {
+        "title": "Module 3: User Maintenance",
+        "lessons": [
+          { "title": "User master record & objects", "type": "lesson" },
+          { "title": "User types", "type": "lesson" },
+          { "title": "Create new user account", "type": "lesson" },
+          { "title": "Mass user maintenance", "type": "lesson" }
+        ]
+      },
+      "module_4": {
+        "title": "Module 4: Role Management",
+        "lessons": [
+          { "title": "Authorization Structure", "type": "lesson" },
+          { "title": "Profiles vs Roles", "type": "lesson" },
+          { "title": "Creation, Changes, Deletion of Roles", "type": "lesson" },
+          { "title": "Role Comparison", "type": "lesson" }
+        ]
+      },
+      "module_5": {
+        "title": "Module 5: Fiori Security (ADM 945)",
+        "lessons": [
+          { "title": "Fiori Introduction & Architecture", "type": "lesson" },
+          { "title": "Fiori Apps, Catalogs, Groups, Spaces & Pages", "type": "lesson" },
+          { "title": "Fiori Role Design (PFCG)", "type": "lesson" },
+          { "title": "Troubleshooting Fiori Issues", "type": "lesson" }
+        ]
+      },
+      "module_6": {
+        "title": "Module 6: SAP GRC - Access Risk Management",
+        "lessons": [
+          { "title": "Configuration", "type": "lesson" },
+          { "title": "Global SOD Matrix", "type": "lesson" },
+          { "title": "Risk ID Setup & Simulation", "type": "lesson" },
+          { "title": "Ruleset Maintenance & Transport", "type": "lesson" }
+        ]
+      },
+      "module_7": {
+        "title": "Module 7: SAP GRC - Access Request Management",
+        "lessons": [
+          { "title": "Workflow Activation", "type": "lesson" },
+          { "title": "MSMP Workflows & BRF+", "type": "lesson" },
+          { "title": "Provisioning Settings", "type": "lesson" },
+          { "title": "Customization & Notifications", "type": "lesson" }
+        ]
+      },
+      "module_8": {
+        "title": "Module 8: SAP GRC - Business Role Management",
+        "lessons": [
+          { "title": "Role Naming Conventions", "type": "lesson" },
+          { "title": "Workflow for Role Maintenance", "type": "lesson" },
+          { "title": "Single, Master, and Composite Role Creation", "type": "lesson" },
+          { "title": "Role Upload & Reports", "type": "lesson" }
+        ]
+      },
+      "module_9": {
+        "title": "Module 9: SAP GRC - Emergency Access Management",
+        "lessons": [
+          { "title": "Centralized & Decentralized FFID Models", "type": "lesson" },
+          { "title": "Workflow for Super User Access", "type": "lesson" },
+          { "title": "Log Reports & Monitoring", "type": "lesson" }
+        ]
+      },
+      "module_10": {
+        "title": "Module 10: S/4 HANA Public Cloud Security",
+        "lessons": [
+          { "title": "User Role Management Apps", "type": "lesson" },
+          { "title": "Transport Concepts (ATO & BCP)", "type": "lesson" },
+          { "title": "Cloud Identity Service (IAS)", "type": "lesson" },
+          { "title": "User Access Review (UAR)", "type": "lesson" }
+        ]
+      }
+    },
+    "SAP SuccessFactors Employee Central": {
+      "module_1": {
+        "title": "Module 1: Introduction to Cloud & SuccessFactors",
+        "lessons": [
+          { "title": "On-Premise Vs Cloud", "type": "lesson" },
+          { "title": "Implementation Methodologies", "type": "lesson" },
+          { "title": "System Architecture", "type": "lesson" },
+          { "title": "Core & Talent Modules Overview", "type": "lesson" }
+        ]
+      },
+      "module_2": {
+        "title": "Module 2: Initial System Setup",
+        "lessons": [
+          { "title": "Super Admin Creation", "type": "lesson" },
+          { "title": "Role-Based Permissions", "type": "lesson" },
+          { "title": "Home Page Setup", "type": "lesson" },
+          { "title": "Theme Manager & Instance Theming", "type": "lesson" }
+        ]
+      },
+      "module_3": {
+        "title": "Module 3: Employee Central Core",
+        "lessons": [
+          { "title": "Implementation Steps", "type": "lesson" },
+          { "title": "Data Models (Corporate, Succession, Workflow)", "type": "lesson" },
+          { "title": "Foundation, MDF, and Personal Objects", "type": "lesson" }
+        ]
+      },
+      "module_4": {
+        "title": "Module 4: Data Management & Associations",
+        "lessons": [
+          { "title": "Import & Export Data", "type": "lesson" },
+          { "title": "Foundation Object Imports", "type": "lesson" },
+          { "title": "Generic to Foundation Object Associations", "type": "lesson" },
+          { "title": "Picklist Center", "type": "lesson" }
+        ]
+      },
+      "module_5": {
+        "title": "Module 5: Business Rules & Workflows",
+        "lessons": [
+          { "title": "Configuration Types (Object, Portlet, Field)", "type": "lesson" },
+          { "title": "Workflow Rules", "type": "lesson" },
+          { "title": "Workflow Roles (Dynamic Role, Dynamic Group)", "type": "lesson" },
+          { "title": "Events and Event Reasons", "type": "lesson" }
+        ]
+      },
+      "module_6": {
+        "title": "Module 6: Permissions & Position Management",
+        "lessons": [
+          { "title": "Manage Permissions Roles & Groups", "type": "lesson" },
+          { "title": "User Permissions", "type": "lesson" },
+          { "title": "Global Assignment", "type": "lesson" },
+          { "title": "Position Management & Job to Position Sync", "type": "lesson" }
+        ]
+      },
+      "module_7": {
+        "title": "Module 7: Data Migration & Integration",
+        "lessons": [
+          { "title": "Import Employee Data", "type": "lesson" },
+          { "title": "Employee Export", "type": "lesson" },
+          { "title": "HRIS Sync Job & Mappings", "type": "lesson" },
+          { "title": "Configure People Profile", "type": "lesson" }
+        ]
+      },
+      "module_8": {
+        "title": "Module 8: Live Project & Career Prep",
+        "lessons": [
+          { "title": "End-to-end Implementation Workshop", "type": "lesson" },
+          { "title": "Resume Preparation", "type": "lesson" },
+          { "title": "LinkedIn Profile Building", "type": "lesson" },
+          { "title": "Mock Interviews (Functional, Technical, Project)", "type": "lesson" }
+        ]
+      }
+    }
+  },
+  "Generative AI": {
+    "GenAI & Agentic AI": {
+      "module_1": {
+        "title": "Module 1: Python Fundamentals",
+        "lessons": [
+          { "title": "Basics & Control Flow", "type": "lesson" },
+          { "title": "Data Structures (Lists, Dictionaries)", "type": "lesson" },
+          { "title": "Functions & Modules", "type": "lesson" },
+          { "title": "Object-Oriented Programming (OOP)", "type": "lesson" }
+        ]
+      },
+      "module_2": {
+        "title": "Module 2: Machine Learning & Deep Learning Basics",
+        "lessons": [
+          { "title": "Classification vs Regression", "type": "lesson" },
+          { "title": "Overfitting & Regularization", "type": "lesson" },
+          { "title": "Intro to Neural Networks", "type": "lesson" },
+          { "title": "Recurrent Neural Networks (RNN)", "type": "lesson" }
+        ]
+      },
+      "module_3": {
+        "title": "Module 3: Embeddings, LSTMs, & Transformers",
+        "lessons": [
+          { "title": "Vector Embeddings (Word2Vec, GloVe)", "type": "lesson" },
+          { "title": "Implementing LSTMs", "type": "lesson" },
+          { "title": "Attention Mechanisms", "type": "lesson" },
+          { "title": "Transformer Architecture", "type": "lesson" }
+        ]
+      },
+      "module_4": {
+        "title": "Module 4: Generative AI Essentials",
+        "lessons": [
+          { "title": "Intro to Gen AI", "type": "lesson" },
+          { "title": "Hugging Face Frameworks", "type": "lesson" },
+          { "title": "Prompt Engineering vs Fine-tuning", "type": "lesson" },
+          { "title": "Chain of Thought Prompting", "type": "lesson" }
+        ]
+      },
+      "module_5": {
+        "title": "Module 5: Mastering LangChain, LangGraph & LangFlow",
+        "lessons": [
+          { "title": "Core Framework (Chains, Agents, Memory)", "type": "lesson" },
+          { "title": "Building Chatbots & Integrating Data Sources", "type": "lesson" },
+          { "title": "Graph-Based AI Workflows", "type": "lesson" },
+          { "title": "Deploying with LangFlow", "type": "lesson" }
+        ]
+      },
+      "module_6": {
+        "title": "Module 6: Retrieval-Augmented Generation (RAG)",
+        "lessons": [
+          { "title": "Architecture of RAG", "type": "lesson" },
+          { "title": "Implementing RAG with Hugging Face", "type": "lesson" },
+          { "title": "Open-domain Q&A Systems", "type": "lesson" },
+          { "title": "Fine-tuning RAG for Custom Data", "type": "lesson" }
+        ]
+      },
+      "module_7": {
+        "title": "Module 7: Agents and Agentic RAG",
+        "lessons": [
+          { "title": "Definition and Types of Agents", "type": "lesson" },
+          { "title": "Agentic Frameworks (LangChain)", "type": "lesson" },
+          { "title": "Combining RAG with Agents", "type": "lesson" },
+          { "title": "Implementing an Agentic RAG system", "type": "lesson" }
+        ]
+      },
+      "module_8": {
+        "title": "Module 8: Capstone Project",
+        "lessons": [
+          { "title": "Building an AI-powered Multi-Agent Q&A system integrating RAG and agents.", "type": "lesson" }
+        ]
+      }
+    }
+  }
+}
