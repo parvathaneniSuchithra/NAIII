@@ -465,6 +465,7 @@
       "explanation": "USOBX_C defines active AUTHORITY-CHECKs; USOBT_C carries default values."
     }
   ],
+<<<<<<< HEAD
   "Quiz(3) 14/08": [
     {
       "question": "Your customer has created a custom transaction code ZFB10N by copying transaction FB10 and implementing a user exit. How can you incorporate the customer enhancement into the global rule set so that it will be available for Risk Analysis?",
@@ -2554,6 +2555,8 @@
       "explanation": "While it is highly recommended to run log collection and other sync jobs in the background due to the potential volume of data, it is technically possible to run them in the foreground for small datasets or testing."
     }
   ],
+=======
+>>>>>>> 1d2898f929d22291d213a5a206812f1af9bb0572
   "Security2": [
     {
       "question": "Which of the following is NOT a mandatory field during user creation in SU01?",
@@ -2773,6 +2776,7 @@
       "correct_option": "Client Lock",
       "explanation": "Client Lock is not a user lock type; it's a system-wide lock for a client."
     }
+<<<<<<< HEAD
   ],
   "SuccessFactors Quiz 1": [
     {
@@ -6258,3 +6262,7 @@
     }
   ]
 }
+=======
+  ]
+}
+>>>>>>> 1d2898f929d22291d213a5a206812f1af9bb0572
