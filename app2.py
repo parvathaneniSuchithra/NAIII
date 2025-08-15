@@ -293,15 +293,11 @@ def view_syllabus_page():
     
     categories = db.get_syllabus_categories()
 
-
-
     if not categories:
         st.info("The syllabus is currently empty. Please contact an administrator.")
         return
 
     for category in categories:
-
-        
         with st.container():
             st.subheader(category['name'])
             courses = db.get_syllabus_courses(category['id'])
@@ -344,7 +340,6 @@ def student_quiz_page():
             st.rerun()
     else:
         display_quiz()
-
 def display_quiz():
     quiz_id = st.session_state.current_quiz_id
     questions = db.get_questions_for_quiz(quiz_id)
@@ -357,89 +352,119 @@ def display_quiz():
     q_index = st.session_state.current_question_index
     if q_index >= total_questions:
         st.session_state.quiz_completed = True
-        timestamp = int(time.time())
         db.save_user_progress(st.session_state.user_id, quiz_id, st.session_state.score, total_questions, True, st.session_state.student_answers)
         st.rerun()
 
     current_question = questions[q_index]
     options = json.loads(current_question["options"])
     
-    st.title(f"Question {q_index + 1} of {total_questions}")
+    try:
+        correct_answers = json.loads(current_question["correct_option"])
+        is_multi_answer = isinstance(correct_answers, list)
+    except (json.JSONDecodeError, TypeError):
+        correct_answers = current_question["correct_option"]
+        is_multi_answer = False
+
+    st.title("Quiz in Progress")
     display_progress_bar(q_index + 1, total_questions)
     
-    with st.container():
-        st.subheader(f"Question {q_index + 1} of {total_questions}")
-        st.markdown(f"**{current_question['question_text']}**")
-        
-        def update_selection():
-            st.session_state.selection = st.session_state[f"q_radio_{q_index}"]
+    # --- ENHANCEMENT: Apply CSS class for animation and styling ---
+    st.markdown("<div class='quiz-container'>", unsafe_allow_html=True)
+    
+    st.subheader(f"Question {q_index + 1}:")
+    st.markdown(f"<h4>{current_question['question_text']}</h4>", unsafe_allow_html=True)
+    is_submitted = st.session_state.show_explanation
 
-        st.radio(
-            "Select your answer:", 
-            options, 
-            key=f"q_radio_{q_index}",
-            index=None,
-            on_change=update_selection
+    if is_multi_answer:
+        st.info("This question may have multiple correct answers.")
+        st.session_state.selection = st.multiselect(
+            "Select all that apply:", options,
+            default=st.session_state.get('selection', []),
+            key=f"q_multiselect_{q_index}",
+            disabled=is_submitted
         )
+    else:
+        default_index = None
+        if st.session_state.get('selection') in options:
+            default_index = options.index(st.session_state.selection)
+        
+        st.session_state.selection = st.radio(
+            "Select one answer:", options, 
+            key=f"q_radio_{q_index}",
+            index=default_index,
+            disabled=is_submitted
+        )
+    
+    st.markdown("</div>", unsafe_allow_html=True) # Close the quiz-container div
 
-        if st.session_state.selection is None:
-            st.markdown("<p style='color: red;'>Please select an answer to continue.</p>", unsafe_allow_html=True)
+    action_col, feedback_col = st.columns([1, 4])
+
+    with action_col:
+        if is_submitted:
+            if st.button("Next", key="next_q", type="primary", use_container_width=True):
+                st.session_state.current_question_index += 1
+                st.session_state.show_explanation = False
+                st.session_state.selection = None
+                st.rerun()
         else:
-            if "timer_start" not in st.session_state or st.session_state.timer_start is None:
-                st.session_state.timer_start = time.time()
-            time_left = st.session_state.quiz_time_left - (time.time() - st.session_state.timer_start)
-            st.write(f"Time Left: {int(time_left)}s")
-            if time_left <= 0:
+            if st.button("Submit", disabled=not st.session_state.get('selection'), use_container_width=True):
+                selection = st.session_state.selection
+                is_correct = (set(selection) == set(correct_answers)) if is_multi_answer else (selection == correct_answers)
+                
+                if is_correct:
+                    st.session_state.score += 1
+                
+                st.session_state.student_answers.append({
+                    "question": current_question["question_text"],
+                    "selected": selection,
+                    "correct": correct_answers,
+                    "is_correct": is_correct
+                })
+                st.session_state.last_answer_correct = is_correct
                 st.session_state.show_explanation = True
                 st.rerun()
 
-        col1, col2 = st.columns([1, 4])
-        with col1:
-            if st.session_state.show_explanation:
-                if st.button("Next Question", help="Move to the next question"):
-                    st.session_state.current_question_index += 1
-                    st.session_state.show_explanation = False
-                    st.session_state.selection = None
-                    st.session_state.timer_start = None
-                    st.rerun()
-            else:
-                if st.button("Submit Answer", disabled=(st.session_state.selection is None), help="Submit your selected answer"):
-                    is_correct = (st.session_state.selection == current_question["correct_option"])
-                    if is_correct:
-                        st.session_state.score += 1
-                    
-                    st.session_state.student_answers.append({
-                        "question": current_question["question_text"],
-                        "selected": st.session_state.selection,
-                        "correct": current_question["correct_option"],
-                        "is_correct": is_correct
-                    })
-                    st.session_state.last_answer_correct = is_correct
-                    st.session_state.show_explanation = True
-                    st.rerun()
-        
-        if st.session_state.show_explanation:
-            with col2:
-                feedback = "✅ Correct!" if st.session_state.last_answer_correct else f"❌ Wrong! Correct answer: **{current_question['correct_option']}**"
-                st.write(feedback)
-                st.info(f"**Explanation:** {current_question['explanation']}")
+    with feedback_col:
+        if is_submitted:
+            is_correct = st.session_state.last_answer_correct
+            feedback_icon = "✅ Correct!" if is_correct else "❌ Incorrect"
+            border_color = "var(--accent-color)" if is_correct else "#dc3545"
+            text_color = "#155724" if is_correct else "#721c24"
+            
+            correct_display = ", ".join(correct_answers) if is_multi_answer else correct_answers
+            
+            # --- ENHANCEMENT: Cleaner feedback box using CSS class ---
+            st.markdown(f"""
+            <div class="feedback-box" style="border-color: {border_color};">
+                <h4 style="color: {text_color};">{feedback_icon}</h4>
+                {'<p><b>Correct Answer(s):</b> ' + correct_display + '</p>' if not is_correct else ''}
+                <p><b>Explanation:</b> {current_question['explanation']}</p>
+            </div>
+            """, unsafe_allow_html=True)
 
 def display_quiz_dashboard(total_questions):
-    st.header("Quiz Completed!")
+    st.header("🎉 Quiz Completed! 🎉")
     with st.container():
         score = st.session_state.score
         accuracy = (score / total_questions * 100) if total_questions > 0 else 0
-        st.metric("Your Score", f"{score}/{total_questions}")
-        st.metric("Accuracy", f"{accuracy:.2f}%")
+        
+        col1, col2 = st.columns(2)
+        col1.metric("Your Score", f"{score}/{total_questions}")
+        col2.metric("Accuracy", f"{accuracy:.1f}%")
         
         st.subheader("Review Your Answers")
         for i, answer in enumerate(st.session_state.student_answers):
-            st.markdown(f"**Q{i+1}: {answer['question']}**")
-            status = "✅" if answer["is_correct"] else "❌"
-            st.write(f"Your answer: {answer['selected']} {status}")
-            if not answer["is_correct"]:
-                st.write(f"Correct answer: {answer['correct']}")
-            st.markdown("---")
+            with st.container():
+                st.markdown(f"**Q{i+1}: {answer['question']}**")
+                status = "✅ Correct" if answer["is_correct"] else "❌ Incorrect"
+                
+                selected_display = ", ".join(answer['selected']) if isinstance(answer['selected'], list) else answer['selected']
+                correct_display = ", ".join(answer['correct']) if isinstance(answer['correct'], list) else answer['correct']
+                
+                st.write(f"Your answer: `{selected_display}` ({status})")
+                if not answer["is_correct"]:
+                    st.write(f"Correct answer(s): `{correct_display}`")
+                st.markdown("---")
             
     if st.button("Take Another Quiz", help="Start a new quiz"):
         reset_quiz_state()
@@ -457,21 +482,16 @@ def display_quiz_dashboard(total_questions):
 def view_my_scores_page():
     st.title("My Scores")
     
-    # Fetch all progress records for the logged-in user
     progress_records = db.get_user_progress(st.session_state.user_id)
     
     if not progress_records:
         st.info("You have not completed any quizzes yet.")
         return
 
-    # --- IMPROVEMENT: Process data in a single loop for efficiency ---
     df_data = []
-    # Display most recent attempts first
     for record in reversed(progress_records):
-        # --- FIX: Safely access timestamp from sqlite3.Row object ---
         ts = record['timestamp'] if 'timestamp' in record else None
         
-        # Prepare data for the DataFrame
         date_str_for_df = datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S') if ts else "N/A"
         df_data.append({
             "Quiz Name": record['quiz_name'],
@@ -480,7 +500,6 @@ def view_my_scores_page():
             "Date": date_str_for_df
         })
 
-        # Display the expander for each quiz attempt
         date_str_for_expander = f"on {datetime.fromtimestamp(ts).strftime('%Y-%m-%d')}" if ts else ""
         expander_title = f"Quiz: {record['quiz_name']} - Score: {record['score']}/{record['total']} {date_str_for_expander}"
         
@@ -490,25 +509,25 @@ def view_my_scores_page():
                 for i, answer in enumerate(answers):
                     st.markdown(f"**Q{i+1}: {answer['question']}**")
                     status = "✅" if answer["is_correct"] else "❌"
-                    st.write(f"Your answer: {answer['selected']} {status}")
+
+                    selected_display = ", ".join(answer['selected']) if isinstance(answer['selected'], list) else answer['selected']
+                    correct_display = ", ".join(answer['correct']) if isinstance(answer['correct'], list) else answer['correct']
+
+                    st.write(f"Your answer: {selected_display} {status}")
                     if not answer["is_correct"]:
-                        st.write(f"Correct answer: {answer['correct']}")
+                        st.write(f"Correct answer(s): {correct_display}")
                     st.markdown("---")
             except (json.JSONDecodeError, TypeError):
                 st.warning("Could not load answer details for this quiz attempt.")
 
-    # --- IMPROVEMENT: Create DataFrame and handle plotting robustly ---
     scores_df = pd.DataFrame(df_data)
     
-    # Filter for entries that have a valid date for plotting
     plot_df = scores_df[scores_df["Date"] != "N/A"].copy()
 
     if not plot_df.empty:
         st.subheader("Score Trend Over Time")
-        # Convert 'Date' column to datetime objects for correct sorting
         plot_df['Date'] = pd.to_datetime(plot_df['Date'])
         
-        # Sort by date to ensure the line chart connects points chronologically
         fig = px.line(plot_df.sort_values(by='Date'), x="Date", y="Score", title="Your Score History", markers=True)
         fig.update_layout(xaxis_title="Date of Attempt", yaxis_title="Questions Correct")
         st.plotly_chart(fig, use_container_width=True)
@@ -517,11 +536,6 @@ def view_my_scores_page():
 
 # --- Admin Panel ---
 def admin_page():
-    """
-    This function serves as the container for all admin-related activities.
-    It uses its own sidebar for navigation within the admin panel, controlled
-    by the 'admin_sub_page' session state variable.
-    """
     st.sidebar.title("Admin Panel")
     
     if "admin_sub_page" not in st.session_state:
@@ -686,7 +700,7 @@ def manage_quizzes_section():
         with st.form("new_quiz_form", clear_on_submit=True):
             quiz_name = st.text_input("Quiz Name")
             categories = db.get_categories()
-            cat_options = [c['name'] for c in categories]
+            cat_options = [c['name'] for c in categories] if categories else []
             quiz_category = st.selectbox("Category", cat_options)
             if st.form_submit_button("Create Quiz"):
                 if quiz_name and quiz_category:
@@ -696,32 +710,68 @@ def manage_quizzes_section():
                 else:
                     st.error("Quiz name and category are required.")
 
-    st.subheader("Add Questions to a Quiz")
+    st.markdown("---")
+    
     all_quizzes = db.get_all_quizzes()
     if not all_quizzes:
         st.info("No quizzes exist. Create a quiz to add questions.")
         return
 
     quiz_options = {f"{q['name']} ({q['category']})": q['id'] for q in all_quizzes}
-    selected_quiz_label = st.selectbox("Select Quiz", list(quiz_options.keys()))
+    selected_quiz_label = st.selectbox("Select a quiz to manage", list(quiz_options.keys()), key="quiz_selector")
     selected_quiz_id = quiz_options[selected_quiz_label]
 
+    st.subheader(f"Add New Question to '{selected_quiz_label}'")
+    
+    option_1 = st.text_input("Option 1", key="opt1")
+    option_2 = st.text_input("Option 2", key="opt2")
+    option_3 = st.text_input("Option 3", key="opt3")
+    option_4 = st.text_input("Option 4", key="opt4")
+    
+    question_type = st.radio("Question Type", ("Single Answer", "Multiple Answers"), horizontal=True, key="q_type")
+    
     with st.form(f"add_question_form_{selected_quiz_id}", clear_on_submit=True):
         question_text = st.text_area("Question Text")
-        options_text = st.text_area("Options (one per line)")
-        correct_option = st.text_input("Correct Option (must match one of the options exactly)")
+        st.markdown("---")
+
+        defined_options = [opt.strip() for opt in [option_1, option_2, option_3, option_4] if opt.strip()]
+
+        correct_answer = None
+        if not defined_options:
+            st.warning("Enter text in the option boxes above to select a correct answer.")
+        else:
+            if question_type == "Single Answer":
+                correct_answer = st.selectbox("Correct Option", options=["Select an option"] + defined_options)
+            else:
+                correct_answer = st.multiselect("Correct Options", options=defined_options)
+
         explanation = st.text_area("Explanation")
         
-        if st.form_submit_button("Add Question"):
-            options = [opt.strip() for opt in options_text.split('\n') if opt.strip()]
-            if question_text and len(options) >= 2 and correct_option in options and explanation:
-                db.add_question(selected_quiz_id, question_text, options, correct_option, explanation)
-                st.success("Question added successfully.")
-                st.rerun()
+        submitted = st.form_submit_button("Add Question to Quiz", type="primary", use_container_width=True)
+        if submitted:
+            final_options = [opt.strip() for opt in [st.session_state.opt1, st.session_state.opt2, st.session_state.opt3, st.session_state.opt4] if opt.strip()]
+
+            # --- FIX: Convert list to JSON string for the database ---
+            final_correct_answer = correct_answer
+            if isinstance(correct_answer, list):
+                final_correct_answer = json.dumps(correct_answer)
+
+            if not question_text:
+                st.error("Question text cannot be empty.")
+            elif len(final_options) < 2:
+                st.error("You must provide at least two non-empty options.")
+            elif not correct_answer or correct_answer == "Select an option":
+                st.error("You must select a correct answer.")
+            elif not explanation:
+                st.error("Please provide an explanation.")
             else:
-                st.error("Please fill all fields. Ensure there are at least 2 options and the correct answer is one of them.")
+                # The database function in the traceback expects a string, not a list
+                db.add_question(selected_quiz_id, question_text, final_options, final_correct_answer, explanation)
+                st.success("Question added successfully!")
     
+    st.markdown("---")
     st.subheader("Edit Existing Questions")
+    
     questions = db.get_questions_for_quiz(selected_quiz_id)
     if not questions:
         st.info("This quiz has no questions yet.")
@@ -729,18 +779,52 @@ def manage_quizzes_section():
         for q in questions:
             with st.expander(f"Edit: {q['question_text'][:50]}..."):
                 with st.form(key=f"edit_q_{q['id']}"):
-                    new_text = st.text_area("Question", value=q['question_text'])
+                    new_text = st.text_area("Question", value=q['question_text'], key=f"text_{q['id']}")
                     current_options = json.loads(q['options'])
-                    new_options_text = st.text_area("Options", value="\n".join(current_options))
-                    new_correct = st.text_input("Correct Option", value=q['correct_option'])
-                    new_explanation = st.text_area("Explanation", value=q['explanation'])
+                    new_options_text = st.text_area("Options (one per line)", value="\n".join(current_options), key=f"opts_{q['id']}")
+                    new_explanation = st.text_area("Explanation", value=q['explanation'], key=f"exp_{q['id']}")
+
+                    is_currently_multi = False
+                    correct_answers_value = q['correct_option']
+                    try:
+                        parsed_correct = json.loads(q['correct_option'])
+                        if isinstance(parsed_correct, list):
+                            is_currently_multi = True
+                            correct_answers_value = parsed_correct
+                    except (json.JSONDecodeError, TypeError):
+                        pass
+
+                    is_now_multi = st.checkbox("Question has multiple correct answers", value=is_currently_multi, key=f"is_multi_edit_{q['id']}")
+                    
+                    if is_now_multi:
+                        display_values = "\n".join(correct_answers_value) if isinstance(correct_answers_value, list) else correct_answers_value
+                        new_correct_text = st.text_area("Correct Options (one per line)", value=display_values, key=f"correct_multi_{q['id']}")
+                    else:
+                        display_value = correct_answers_value[0] if isinstance(correct_answers_value, list) else correct_answers_value
+                        new_correct_input = st.text_input("Correct Option", value=display_value, key=f"correct_single_{q['id']}")
                     
                     c1, c2 = st.columns(2)
                     if c1.form_submit_button("Update Question"):
                         new_options = [opt.strip() for opt in new_options_text.split('\n') if opt.strip()]
-                        db.update_question(q['id'], new_text, new_options, new_correct, new_explanation)
-                        st.success("Question updated.")
-                        st.rerun()
+                        final_correct_value = None
+
+                        if is_now_multi:
+                            final_correct_answers = [opt.strip() for opt in new_correct_text.split('\n') if opt.strip()]
+                            if final_correct_answers and all(ans in new_options for ans in final_correct_answers):
+                                final_correct_value = json.dumps(final_correct_answers)
+                            else:
+                                st.error("All correct options must exist in the options list.")
+                        else:
+                            if new_correct_input in new_options:
+                                final_correct_value = new_correct_input
+                            else:
+                                st.error("The correct answer must be one of the options.")
+                        
+                        if final_correct_value is not None:
+                            db.update_question(q['id'], new_text, new_options, final_correct_value, new_explanation)
+                            st.success("Question updated.")
+                            st.rerun()
+
                     if c2.form_submit_button("Delete Question"):
                         db.delete_question(q['id'])
                         st.warning("Question deleted.")
@@ -756,7 +840,7 @@ def manage_users_section():
             role = st.selectbox("Role", ["student", "admin"])
             
             categories = db.get_categories()
-            cat_options = [c['name'] for c in categories]
+            cat_options = [c['name'] for c in categories] if categories else []
             category = st.selectbox("Assign to Category", cat_options)
             
             if st.form_submit_button("Add User"):
@@ -769,11 +853,20 @@ def manage_users_section():
 
     st.subheader("Existing Users")
     users = db.get_all_users()
+    categories = db.get_categories()
+    cat_options = [c['name'] for c in categories] if categories else []
+
     for user in users:
         with st.expander(f"Edit User: {user['username']} (Role: {user['role']})"):
             with st.form(key=f"edit_user_{user['id']}"):
                 new_username = st.text_input("Username", value=user['username'])
-                new_category = st.selectbox("Category", cat_options, index=cat_options.index(user['category']) if user['category'] in cat_options else 0)
+                
+                try:
+                    current_cat_index = cat_options.index(user['category'])
+                except ValueError:
+                    current_cat_index = 0
+
+                new_category = st.selectbox("Category", cat_options, index=current_cat_index)
                 
                 c1, c2 = st.columns(2)
                 if c1.form_submit_button("Update User"):
@@ -796,11 +889,9 @@ def view_trainee_performance_section():
         st.info("No quiz performance data available yet.")
         return
 
-    # --- FIX: Convert sqlite3.Row to dicts and then create the DataFrame ---
     data_as_dicts = [dict(row) for row in progress_data]
     df = pd.DataFrame(data_as_dicts)
 
-    # Clean column names to remove potential leading/trailing spaces
     df.columns = df.columns.str.strip()
 
     if 'score' in df.columns and 'total' in df.columns:
@@ -817,11 +908,10 @@ def view_trainee_performance_section():
         categories = df.get('category', pd.Series(dtype='str')).dropna().unique()
         selected_cat = st.sidebar.multiselect("Filter by Category", options=categories, default=list(categories))
         
-        # Ensure filtered_df is created correctly even if 'category' column is missing after map
-        if 'category' in df.columns:
+        if 'category' in df.columns and categories.size > 0:
             filtered_df = df[df['category'].isin(selected_cat)]
         else:
-            filtered_df = df.copy() # If no category, show all data
+            filtered_df = df.copy()
 
         st.subheader("Overall Performance")
         avg_accuracy = filtered_df['accuracy'].mean()
@@ -913,10 +1003,15 @@ def main():
             home_page()
 
 if __name__ == "__main__":
-    if not os.path.exists(db.DATABASE_FILE):
+    if not os.path.exists('quiz_database.db'): 
         print("Database not found. Initializing...")
-        import load_initial_data
-        load_initial_data.load_initial_data()
-        print("Database initialized.")
+        try:
+            import load_initial_data
+            load_initial_data.load_initial_data()
+            print("Database initialized successfully.")
+        except ImportError:
+            print("Warning: `load_initial_data.py` not found. Please create it to load initial data.")
+        except Exception as e:
+            print(f"An error occurred during database initialization: {e}")
 
     main()
