@@ -1,40 +1,47 @@
 import json
-import database as db
 import os
+import database as db
 
 # --- Configuration ---
-QUESTIONS_JSON_FILE = 'questions_sample.json'
-# The script will create these categories for quizzes and users
+QUESTIONS_JSON_FILE = 'questions_sample.json' 
 USER_QUIZ_CATEGORIES = ["SAP Security & GRC", "SAP SuccessFactors", "GenAI & Agentic AI"]
 
 def get_category_for_quiz(quiz_name):
     """
-    Determines the appropriate quiz category based on keywords in the quiz name.
-    This makes the script adaptable to the varied quizzes in the JSON file.
-
-    Args:
-        quiz_name (str): The name of the quiz.
-
-    Returns:
-        str: The determined category name.
+    Intelligently determines the correct category for a quiz based on its name.
     """
     if "SuccessFactors" in quiz_name:
         return "SAP SuccessFactors"
     if "GenAI" in quiz_name:
         return "GenAI & Agentic AI"
-    # Default category for SAP Security, GRC, and other related quizzes
     return "SAP Security & GRC"
+
+def create_default_admin():
+    """
+    Creates a default administrator user if no admin user exists.
+    """
+    print("\n--- Checking for Admin User ---")
+    if not db.get_user("admin"):
+        db.add_user(
+            username="admin",
+            password="admin",
+            role="admin",
+            category=USER_QUIZ_CATEGORIES[0]
+        )
+        print("-> Default admin user created. Username: 'admin', Password: 'admin'.")
+    else:
+        print("-> Admin user already exists. Skipping creation.")
 
 def load_initial_data():
     """
-    Reads the questions JSON file and pre-defined syllabus to load all initial data
-    into the database. It now intelligently assigns quizzes to the correct category.
+    Initializes the database by creating tables and loading all initial data
+    from categories, a questions JSON file, and a predefined syllabus.
     """
     
     print("Initializing database tables...")
     db.create_tables()
     
-    # --- Create User/Quiz Categories ---
+    # --- 1. Create User/Quiz Categories ---
     print("\n--- Creating User/Quiz Categories ---")
     for cat_name in USER_QUIZ_CATEGORIES:
         try:
@@ -43,8 +50,8 @@ def load_initial_data():
         except Exception:
             print(f"-> Category '{cat_name}' likely already exists. Skipping.")
 
-    # --- Load Quizzes and Questions ---
-    print(f"\n--- Loading Quizzes from '{QUESTIONS_JSON_FILE}' ---")
+    # --- 2. Load Quizzes and Questions from JSON File ---
+    print(f"\n--- Loading Quizzes and Questions from '{QUESTIONS_JSON_FILE}' ---")
     if os.path.exists(QUESTIONS_JSON_FILE):
         with open(QUESTIONS_JSON_FILE, 'r', encoding='utf-8') as f:
             quizzes_data = json.load(f)
@@ -52,37 +59,37 @@ def load_initial_data():
         for quiz_name, questions in quizzes_data.items():
             print(f"\nProcessing quiz: '{quiz_name}'...")
             try:
-                # **IMPROVEMENT**: Dynamically assign category instead of hardcoding
                 category = get_category_for_quiz(quiz_name)
-                
-                db.add_quiz(quiz_name, category)
-                print(f"-> Quiz '{quiz_name}' added to the database under '{category}'.")
-                
-                # Fetch the newly created quiz's ID to associate questions with it
-                all_quizzes = db.get_all_quizzes()
-                quiz_id = next((q['id'] for q in all_quizzes if q['name'] == quiz_name), None)
+                quiz_id = db.add_quiz(quiz_name, category)
 
-                if quiz_id and questions:
-                    # Check if questions already exist for this quiz to avoid duplication
-                    existing_questions = db.get_questions_for_quiz(quiz_id)
-                    if not existing_questions:
-                        for q in questions:
+                if quiz_id:
+                    print(f"-> Quiz '{quiz_name}' added to the database with ID {quiz_id}.")
+                    
+                    if questions:
+                        for q_data in questions:
+                            correct_option = q_data['correct_option']
+                            
+                            # FIX: Convert list of correct answers to a JSON string
+                            if isinstance(correct_option, list):
+                                correct_option = json.dumps(correct_option)
+
                             db.add_question(
                                 quiz_id=quiz_id,
-                                question_text=q['question'],
-                                options=q['options'],
-                                correct_option=q['correct_option'],
-                                explanation=q.get('explanation', '') # Use .get for safety
+                                question_text=q_data['question'],
+                                options=q_data['options'],
+                                correct_option=correct_option,
+                                explanation=q_data.get('explanation', '')
                             )
-                        print(f"-> Successfully loaded {len(questions)} questions for '{quiz_name}'.")
-                    else:
-                        print(f"-> Questions for '{quiz_name}' already exist. Skipping question loading.")
-            except Exception as e:
-                print(f"-> Quiz '{quiz_name}' likely already exists or an error occurred. Skipping. Error: {e}")
-    else:
-        print(f"WARNING: '{QUESTIONS_JSON_FILE}' not found. Skipping quiz loading.")
+                        print(f"-> Loaded {len(questions)} questions for '{quiz_name}'.")
+                else:
+                    print(f"-> Quiz '{quiz_name}' already exists. Skipping question loading.")
 
-    # --- Load Full Syllabus from Pre-defined Structure (No changes needed here) ---
+            except Exception as e:
+                print(f"-> An error occurred while processing quiz '{quiz_name}'. Skipping. Error: {e}")
+    else:
+        print(f"WARNING: The file '{QUESTIONS_JSON_FILE}' was not found. Skipping quiz loading.")
+
+    # --- 3. Load Full Syllabus from Pre-defined Structure ---
     print("\n--- Loading Full Syllabus ---")
     
     syllabus_structure = {
@@ -130,7 +137,6 @@ def load_initial_data():
         }
     }
 
-    # This part of the script remains effective and does not require changes.
     for category_name, courses in syllabus_structure.items():
         print(f"\nProcessing syllabus category: '{category_name}'...")
         try:
@@ -154,7 +160,10 @@ def load_initial_data():
         except Exception:
             print(f"-> Syllabus category '{category_name}' likely already exists. Skipping.")
 
-    print("\n\nData loading complete!")
+    # --- 4. Create Default Admin User ---
+    create_default_admin()
+    
+    print("\n\n✅ Data loading process complete!")
 
 if __name__ == '__main__':
     load_initial_data()
