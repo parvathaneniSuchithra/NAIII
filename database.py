@@ -2,7 +2,8 @@ import sqlite3
 import json
 import time
 
-DATABASE_FILE = "quiz_app.db"
+# Standardized database filename
+DATABASE_FILE = "quiz_database.db"
 
 def get_db_connection():
     """
@@ -17,46 +18,38 @@ def get_db_connection():
 
 def create_tables():
     """Creates all necessary database tables if they don't already exist."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    # --- User, Quiz, and Category Tables ---
-    cursor.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT UNIQUE, password TEXT, role TEXT, category TEXT)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS categories (id INTEGER PRIMARY KEY, name TEXT UNIQUE)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS quizzes (id INTEGER PRIMARY KEY, name TEXT UNIQUE, category TEXT)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS questions (id INTEGER PRIMARY KEY, quiz_id INTEGER, question_text TEXT, options TEXT, correct_option TEXT, explanation TEXT, FOREIGN KEY (quiz_id) REFERENCES quizzes (id) ON DELETE CASCADE)")
-    
-    # --- IMPROVEMENT: Added timestamp column to user_progress ---
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS user_progress (
-            id INTEGER PRIMARY KEY, 
-            user_id INTEGER, 
-            quiz_id INTEGER, 
-            score INTEGER, 
-            total INTEGER, 
-            attempted BOOLEAN, 
-            answers_log TEXT, 
-            timestamp INTEGER,
-            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE, 
-            FOREIGN KEY (quiz_id) REFERENCES quizzes (id) ON DELETE CASCADE, 
-            UNIQUE(user_id, quiz_id)
-        )
-    """)
-    
-    # --- Syllabus Tables ---
-    cursor.execute("CREATE TABLE IF NOT EXISTS syllabus_categories (id INTEGER PRIMARY KEY, name TEXT UNIQUE)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS syllabus_courses (id INTEGER PRIMARY KEY, name TEXT, category_id INTEGER, FOREIGN KEY (category_id) REFERENCES syllabus_categories (id) ON DELETE CASCADE)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS syllabus_modules (id INTEGER PRIMARY KEY, title TEXT, course_id INTEGER, FOREIGN KEY (course_id) REFERENCES syllabus_courses (id) ON DELETE CASCADE)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS syllabus_lessons (id INTEGER PRIMARY KEY, title TEXT, type TEXT, module_id INTEGER, FOREIGN KEY (module_id) REFERENCES syllabus_modules (id) ON DELETE CASCADE)")
-    
-    conn.commit()
-    conn.close()
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT UNIQUE, password TEXT, role TEXT, category TEXT)")
+        cursor.execute("CREATE TABLE IF NOT EXISTS categories (id INTEGER PRIMARY KEY, name TEXT UNIQUE)")
+        cursor.execute("CREATE TABLE IF NOT EXISTS quizzes (id INTEGER PRIMARY KEY, name TEXT UNIQUE, category TEXT)")
+        cursor.execute("CREATE TABLE IF NOT EXISTS questions (id INTEGER PRIMARY KEY, quiz_id INTEGER, question_text TEXT, options TEXT, correct_option TEXT, explanation TEXT, FOREIGN KEY (quiz_id) REFERENCES quizzes (id) ON DELETE CASCADE)")
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS user_progress (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                user_id INTEGER NOT NULL, 
+                quiz_id INTEGER NOT NULL, 
+                quiz_name TEXT,
+                score INTEGER NOT NULL, 
+                total INTEGER NOT NULL, 
+                completed BOOLEAN NOT NULL, 
+                answers_log TEXT, 
+                timestamp INTEGER NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE, 
+                FOREIGN KEY (quiz_id) REFERENCES quizzes (id) ON DELETE CASCADE
+            )
+        """)
+        cursor.execute("CREATE TABLE IF NOT EXISTS syllabus_categories (id INTEGER PRIMARY KEY, name TEXT UNIQUE)")
+        cursor.execute("CREATE TABLE IF NOT EXISTS syllabus_courses (id INTEGER PRIMARY KEY, name TEXT, category_id INTEGER, FOREIGN KEY (category_id) REFERENCES syllabus_categories (id) ON DELETE CASCADE)")
+        cursor.execute("CREATE TABLE IF NOT EXISTS syllabus_modules (id INTEGER PRIMARY KEY, title TEXT, course_id INTEGER, FOREIGN KEY (course_id) REFERENCES syllabus_courses (id) ON DELETE CASCADE)")
+        cursor.execute("CREATE TABLE IF NOT EXISTS syllabus_lessons (id INTEGER PRIMARY KEY, title TEXT, type TEXT, module_id INTEGER, FOREIGN KEY (module_id) REFERENCES syllabus_modules (id) ON DELETE CASCADE)")
+        conn.commit()
 
 # --- Category Management ---
 def add_category(name):
     """Adds a new user/quiz category."""
     with get_db_connection() as conn:
-        conn.execute("INSERT INTO categories (name) VALUES (?)", (name,))
+        conn.execute("INSERT OR IGNORE INTO categories (name) VALUES (?)", (name,))
         conn.commit()
 
 def get_categories():
@@ -107,10 +100,15 @@ def update_user(user_id, new_username, new_category):
 
 # --- Quiz Management ---
 def add_quiz(name, category):
-    """Adds a new quiz."""
+    """Adds a new quiz. Returns the new quiz ID or None if it already exists."""
     with get_db_connection() as conn:
-        conn.execute("INSERT INTO quizzes (name, category) VALUES (?, ?)", (name, category))
-        conn.commit()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("INSERT INTO quizzes (name, category) VALUES (?, ?)", (name, category))
+            conn.commit()
+            return cursor.lastrowid
+        except sqlite3.IntegrityError:
+            return None
 
 def get_all_quizzes():
     """Retrieves all quizzes."""
@@ -124,11 +122,15 @@ def get_quizzes_by_category(category):
 
 # --- Question Management ---
 def add_question(quiz_id, question_text, options, correct_option, explanation):
-    """Adds a new question to a quiz."""
+    """Adds a new question to a quiz, correctly handling list and string types for the answer."""
     with get_db_connection() as conn:
+        options_str = json.dumps(options)
+        correct_option_str = json.dumps(correct_option) if isinstance(correct_option, list) else correct_option
+        
         conn.execute("INSERT INTO questions (quiz_id, question_text, options, correct_option, explanation) VALUES (?, ?, ?, ?, ?)",
-                     (quiz_id, question_text, json.dumps(options), correct_option, explanation))
+                     (quiz_id, question_text, options_str, correct_option_str, explanation))
         conn.commit()
+
 
 def get_questions_for_quiz(quiz_id):
     """Retrieves all questions for a specific quiz."""
@@ -136,10 +138,13 @@ def get_questions_for_quiz(quiz_id):
         return conn.execute("SELECT * FROM questions WHERE quiz_id = ?", (quiz_id,)).fetchall()
 
 def update_question(question_id, new_text, new_options, new_correct, new_explanation):
-    """Updates an existing question."""
+    """Updates an existing question, correctly handling list and string types."""
     with get_db_connection() as conn:
+        options_str = json.dumps(new_options)
+        correct_str = json.dumps(new_correct) if isinstance(new_correct, list) else new_correct
+
         conn.execute("UPDATE questions SET question_text = ?, options = ?, correct_option = ?, explanation = ? WHERE id = ?",
-                     (new_text, json.dumps(new_options), new_correct, new_explanation, question_id))
+                     (new_text, options_str, correct_str, new_explanation, question_id))
         conn.commit()
 
 def delete_question(question_id):
@@ -149,31 +154,21 @@ def delete_question(question_id):
         conn.commit()
 
 # --- User Progress Management ---
-def save_user_progress(user_id, quiz_id, score, total, attempted, answers_log):
-    """
-    **IMPROVED**: Saves or updates a user's quiz progress using an efficient 'UPSERT' operation.
-    Now includes a timestamp for tracking trends.
-    """
-    conn = get_db_connection()
-    timestamp = int(time.time())
-    # Using modern UPSERT syntax for efficiency
-    conn.execute("""
-        INSERT INTO user_progress (user_id, quiz_id, score, total, attempted, answers_log, timestamp)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(user_id, quiz_id) DO UPDATE SET
-            score = excluded.score,
-            total = excluded.total,
-            attempted = excluded.attempted,
-            answers_log = excluded.answers_log,
-            timestamp = excluded.timestamp
-    """, (user_id, quiz_id, score, total, attempted, json.dumps(answers_log), timestamp))
-    conn.commit()
-    conn.close()
+def save_user_progress(user_id, quiz_id, score, total, completed, answers_log):
+    """Saves a user's quiz progress, including a timestamp."""
+    with get_db_connection() as conn:
+        quiz_name = conn.execute("SELECT name FROM quizzes WHERE id = ?", (quiz_id,)).fetchone()['name']
+        log_str = json.dumps(answers_log)
+        timestamp = int(time.time())
+        
+        conn.execute("""
+            INSERT INTO user_progress (user_id, quiz_id, quiz_name, score, total, completed, answers_log, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (user_id, quiz_id, quiz_name, score, total, completed, log_str, timestamp))
+        conn.commit()
 
 def get_user_progress(user_id):
-    """
-    **IMPROVED**: Retrieves a specific user's progress, now including the timestamp.
-    """
+    """Retrieves a specific user's progress, including the timestamp."""
     with get_db_connection() as conn:
         return conn.execute("""
             SELECT up.*, q.name as quiz_name 
@@ -184,10 +179,7 @@ def get_user_progress(user_id):
         """, (user_id,)).fetchall()
 
 def get_all_user_progress():
-    """
-    **IMPROVED**: Retrieves a comprehensive performance report for all users.
-    This single query provides all data needed for the admin dashboard.
-    """
+    """Retrieves a comprehensive performance report for all users."""
     with get_db_connection() as conn:
         return conn.execute("""
             SELECT 
@@ -200,15 +192,15 @@ def get_all_user_progress():
             FROM user_progress up 
             JOIN users u ON up.user_id = u.id 
             JOIN quizzes q ON up.quiz_id = q.id 
-            WHERE up.attempted = 1 
+            WHERE up.completed = 1 
             ORDER BY up.timestamp DESC
         """).fetchall()
 
-# --- Syllabus Management (Complete CRUD) ---
+# --- Syllabus Management ---
 def add_syllabus_category(name):
     """Adds a new syllabus category."""
     with get_db_connection() as conn:
-        conn.execute("INSERT INTO syllabus_categories (name) VALUES (?)", (name,))
+        conn.execute("INSERT OR IGNORE INTO syllabus_categories (name) VALUES (?)", (name,))
         conn.commit()
 
 def get_syllabus_categories():
@@ -239,18 +231,6 @@ def get_syllabus_courses(category_id):
     with get_db_connection() as conn:
         return conn.execute("SELECT * FROM syllabus_courses WHERE category_id = ? ORDER BY name", (category_id,)).fetchall()
 
-def update_syllabus_course(course_id, new_name):
-    """Updates a course's name."""
-    with get_db_connection() as conn:
-        conn.execute("UPDATE syllabus_courses SET name = ? WHERE id = ?", (new_name, course_id))
-        conn.commit()
-
-def delete_syllabus_course(course_id):
-    """Deletes a course."""
-    with get_db_connection() as conn:
-        conn.execute("DELETE FROM syllabus_courses WHERE id = ?", (course_id,))
-        conn.commit()
-
 def add_syllabus_module(title, course_id):
     """Adds a new module to a course."""
     with get_db_connection() as conn:
@@ -262,18 +242,6 @@ def get_syllabus_modules(course_id):
     with get_db_connection() as conn:
         return conn.execute("SELECT * FROM syllabus_modules WHERE course_id = ? ORDER BY id", (course_id,)).fetchall()
 
-def update_syllabus_module(module_id, new_title):
-    """Updates a module's title."""
-    with get_db_connection() as conn:
-        conn.execute("UPDATE syllabus_modules SET title = ? WHERE id = ?", (new_title, module_id))
-        conn.commit()
-
-def delete_syllabus_module(module_id):
-    """Deletes a module."""
-    with get_db_connection() as conn:
-        conn.execute("DELETE FROM syllabus_modules WHERE id = ?", (module_id,))
-        conn.commit()
-
 def add_syllabus_lesson(title, type, module_id):
     """Adds a new lesson to a module."""
     with get_db_connection() as conn:
@@ -284,15 +252,3 @@ def get_syllabus_lessons(module_id):
     """Retrieves all lessons for a module."""
     with get_db_connection() as conn:
         return conn.execute("SELECT * FROM syllabus_lessons WHERE module_id = ? ORDER BY id", (module_id,)).fetchall()
-
-def update_syllabus_lesson(lesson_id, new_title, new_type):
-    """Updates a lesson's details."""
-    with get_db_connection() as conn:
-        conn.execute("UPDATE syllabus_lessons SET title = ?, type = ? WHERE id = ?", (new_title, new_type, lesson_id))
-        conn.commit()
-
-def delete_syllabus_lesson(lesson_id):
-    """Deletes a lesson."""
-    with get_db_connection() as conn:
-        conn.execute("DELETE FROM syllabus_lessons WHERE id = ?", (lesson_id,))
-        conn.commit()
