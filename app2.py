@@ -368,7 +368,6 @@ def display_quiz():
     st.title("Quiz in Progress")
     display_progress_bar(q_index + 1, total_questions)
     
-    # --- ENHANCEMENT: Apply CSS class for animation and styling ---
     st.markdown("<div class='quiz-container'>", unsafe_allow_html=True)
     
     st.subheader(f"Question {q_index + 1}:")
@@ -378,10 +377,8 @@ def display_quiz():
     if is_multi_answer:
         st.info("This question may have multiple correct answers.")
         
-        # Create a list to hold the user's selections
         selections = []
         for option in options:
-            # Create a checkbox for each option
             if st.checkbox(option, key=f"q_{q_index}_opt_{option}", disabled=is_submitted):
                 selections.append(option)
         st.session_state.selection = selections
@@ -398,7 +395,7 @@ def display_quiz():
             disabled=is_submitted
         )
     
-    st.markdown("</div>", unsafe_allow_html=True) # Close the quiz-container div
+    st.markdown("</div>", unsafe_allow_html=True)
 
     action_col, feedback_col = st.columns([1, 4])
 
@@ -432,18 +429,15 @@ def display_quiz():
             is_correct = st.session_state.last_answer_correct
             feedback_icon = "✅ Correct!" if is_correct else "❌ Incorrect"
             border_color = "var(--accent-color)" if is_correct else "#dc3545"
-            text_color = "#155724" if is_correct else "#721c24"
             
             correct_display = ", ".join(correct_answers) if is_multi_answer else correct_answers
             
-            # --- ENHANCEMENT: Cleaner feedback box using CSS class ---
-            st.markdown(f"""
-            <div class="feedback-box" style="border-color: {border_color};">
-                <h4 style="color: {text_color};">{feedback_icon}</h4>
-                {'<p><b>Correct Answer(s):</b> ' + correct_display + '</p>' if not is_correct else ''}
-                <p><b>Explanation:</b> {current_question['explanation']}</p>
-            </div>
-            """, unsafe_allow_html=True)
+            # Use a container with a bordered box for feedback
+            with st.container():
+                with st.expander(f"{feedback_icon}", expanded=True):
+                    if not is_correct:
+                        st.write(f"Correct Answer(s): {correct_display}")
+                    st.write(f"Explanation: {current_question['explanation']}")
 
 def display_quiz_dashboard(total_questions):
     st.header("🎉 Quiz Completed! 🎉")
