@@ -465,8 +465,7 @@
       "explanation": "USOBX_C defines active AUTHORITY-CHECKs; USOBT_C carries default values."
     }
   ],
-<<<<<<< HEAD
-  "Quiz(3) 14/08": [
+  "Quiz(3) - GRC": [
     {
       "question": "Your customer has created a custom transaction code ZFB10N by copying transaction FB10 and implementing a user exit. How can you incorporate the customer enhancement into the global rule set so that it will be available for Risk Analysis?",
       "options": [
@@ -1103,7 +1102,7 @@
       "explanation": "To include custom programs, you need to maintain their authorization objects in SU24 in the ERP system, create a t-code for each program, and then synchronize the SU24 data with GRC using GRAC_AUTH_SYNC."
     }
   ],
-  "quiz(4) 14/08": [
+  "quiz(4) GRC": [
     {
       "question": "Which auto-provisioning options are available in the global provisioning configuration? (Choose three)",
       "options": [
@@ -1459,7 +1458,7 @@
       "explanation": "The SPM Log Synch job's scope is determined by configuration parameters that specify whether to retrieve the System Log (SM21), OS Command Log, and Security Audit Log (SM20) as part of the Firefighter session details."
     }
   ],
-  "CERTIFICATE TEST QUESTION": [
+  "CERTIFICATE TEST QUESTION - GRC": [
     {
       "question": "Which periodic review process allows a role owner to remove roles from the users?",
       "options": [
@@ -2077,7 +2076,7 @@
       "explanation": "This is the correct sequence. You must first bring in the basic objects (users, roles), then their authorization data, and finally the usage data which depends on the previous jobs."
     }
   ],
-  "CERTIFICATE TEST QUESTIONS - Part 2": [
+  "CERTIFICATE TEST QUESTIONS - 2  GRC": [
     {
       "question": "Which transaction is used to execute an ABAP program like GRAC_PFCG_AUTHORIZATION_SYNC?",
       "options": [
@@ -2555,8 +2554,7 @@
       "explanation": "While it is highly recommended to run log collection and other sync jobs in the background due to the potential volume of data, it is technically possible to run them in the foreground for small datasets or testing."
     }
   ],
-=======
->>>>>>> 1d2898f929d22291d213a5a206812f1af9bb0572
+
   "Security2": [
     {
       "question": "Which of the following is NOT a mandatory field during user creation in SU01?",
@@ -2776,7 +2774,7 @@
       "correct_option": "Client Lock",
       "explanation": "Client Lock is not a user lock type; it's a system-wide lock for a client."
     }
-<<<<<<< HEAD
+
   ],
   "SuccessFactors Quiz 1": [
     {
@@ -3650,7 +3648,7 @@
     }
   ],
   
-  "quiz(1) 14/08": [
+  "quiz(1) GRC": [
     {
       "question": "What is the tcode to define/create and modify a workflow?",
       "options": [
@@ -3883,7 +3881,7 @@
       "explanation": "Both SWE2 and SWETYPV transactions are used to maintain event type linkages, which connect a triggering event to a receiver, such as a workflow."
     }
   ] ,  
-  "quiz(2) 14/08": [
+  "quiz(2) GRC": [
       {
         "question": "Your customer has created a custom transaction code ZFB10N by copying transaction FB10 and implementing a user exit. How can you incorporate the customer enhancement into the global rule set so that it will be available for Risk Analysis?",
         "options": [
@@ -6262,7 +6260,4 @@
     }
   ]
 }
-=======
-  ]
-}
->>>>>>> 1d2898f929d22291d213a5a206812f1af9bb0572
+
