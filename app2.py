@@ -377,12 +377,15 @@ def display_quiz():
 
     if is_multi_answer:
         st.info("This question may have multiple correct answers.")
-        st.session_state.selection = st.multiselect(
-            "Select all that apply:", options,
-            default=st.session_state.get('selection', []),
-            key=f"q_multiselect_{q_index}",
-            disabled=is_submitted
-        )
+        
+        # Create a list to hold the user's selections
+        selections = []
+        for option in options:
+            # Create a checkbox for each option
+            if st.checkbox(option, key=f"q_{q_index}_opt_{option}", disabled=is_submitted):
+                selections.append(option)
+        st.session_state.selection = selections
+
     else:
         default_index = None
         if st.session_state.get('selection') in options:
